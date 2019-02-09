@@ -63,3 +63,8 @@ mongod
 *.orig
 logs/
 build/
+
+# Own testing folders
+# =======
+/res
+main.js
