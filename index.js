@@ -42,67 +42,43 @@
     },
 
     generateFieldJson: function(sourceFile, nameRegex, callback) {
-      let regName = /FieldName: ([^\n]*)/,
-        regType = /FieldType: ([A-Za-z\t .]+)/,
-        regFlags = /FieldFlags: ([0-9\t .]+)/,
-        regOptions = /FieldStateOption: ([A-Za-z0-9\t]+)/,
-        regValues = /FieldValue: ([^\n .]+)/,
-        fieldArray = [],
-        currField = {};
-
-      if (nameRegex !== null && typeof nameRegex == 'object')
-        regName = nameRegex;
-
       execFile('pdftk', [sourceFile, 'dump_data_fields_utf8'], function(
         error,
         stdout,
         stderr
       ) {
-        console.log(stdout);
-
         if (error) {
           console.log('exec error: ' + error);
           return callback(error, null);
         }
 
-        fields = stdout
-          .toString()
-          .split('---')
-          .slice(1);
-        fields.forEach(function(field) {
-          currField = {};
+        fields = stdout.split('---').slice(1);
 
-          currField['title'] = field.match(regName)[1].trim() || '';
-
-          if (field.match(regType)) {
-            currField['fieldType'] = field.match(regType)[1].trim() || '';
-          } else {
-            currField['fieldType'] = '';
-          }
-
-          if (field.match(regFlags)) {
-            currField['fieldFlags'] = field.match(regFlags)[1].trim() || '';
-          } else {
-            currField['fieldFlags'] = '';
-          }
-
-          currField['fieldOptions'] = [];
-          if (field.match(regOptions)) {
-            console.log(
-              'VALUES!!!' + JSON.stringify(field.match(regOptions)[1])
-            );
-            const fieldOption = field.match(regOptions)[1].trim();
-            currField['fieldOptions'].push(fieldOption);
-          }
-
-          if (field.match(regValues)) {
-            currField['fieldValue'] = field.match(regValues)[1].trim() || '';
-          } else {
-            currField['fieldValue'] = '';
-          }
-
-          fieldArray.push(currField);
-        });
+        fieldArray = fields.reduce((jsonFields, stringLine) => {
+          const jsonField = stringLine
+            .split('\n')
+            .map(keyValueString => keyValueString.split(':'))
+            .filter(splitted => splitted[1])
+            .reduce((field, splitted) => {
+              const key = splitted[0];
+              const value = splitted[1].trim();
+              // if there is already a value assigned to the key, then we place
+              // that value inside an array, if there is already an array, then
+              // we append the value.
+              if (field[key]) {
+                if (Array.isArray(field[key])) {
+                  field[key].push(value);
+                } else {
+                  field[key] = [field[key]];
+                }
+              } else {
+                field[key] = value;
+              }
+              return field;
+            }, {});
+          jsonFields.push(jsonField);
+          return jsonFields;
+        }, []);
 
         return callback(null, fieldArray);
       });
