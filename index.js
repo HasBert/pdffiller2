@@ -17,31 +17,30 @@
     mapForm2PDF: function(formFields, convMap) {
       let tmpFDFData = this.convFieldJson2FDF(formFields);
       tmpFDFData = _.mapKeys(tmpFDFData, function(value, key) {
-        try {
-          convMap[key];
-        } catch (err) {
-          return key;
-        }
-        return convMap[key];
+        return convMap[key] ? convMap[key] : key;
       });
 
       return tmpFDFData;
     },
 
     convFieldJson2FDF: function(fieldJson) {
-      let _keys = _.map(fieldJson, 'title'),
-        _values = _.map(fieldJson, 'fieldValue');
+      const _keys = _.map(fieldJson, 'FieldName');
+      let _values = _.map(fieldJson, 'FieldValue');
+      console.log(_values);
 
       _values = _.map(_values, function(val) {
-        return val === true ? 'Yes' : 'Off';
+        if (val === true) return 'Yes';
+        else if (val === false) return 'Off';
+        else if (val === undefined) return '';
+        return val;
       });
 
-      let jsonObj = _.zipObject(_keys, _values);
+      const jsonObj = _.zipObject(_keys, _values);
 
       return jsonObj;
     },
 
-    generateFieldJson: function(sourceFile, nameRegex, callback) {
+    generateFieldJson: function(sourceFile, callback) {
       execFile('pdftk', [sourceFile, 'dump_data_fields_utf8'], function(
         error,
         stdout,
@@ -53,7 +52,6 @@
         }
 
         fields = stdout.split('---').slice(1);
-
         fieldArray = fields.reduce((jsonFields, stringLine) => {
           const jsonField = stringLine
             .split('\n')
@@ -84,17 +82,19 @@
       });
     },
 
-    generateFDFTemplate: function(sourceFile, nameRegex, callback) {
+    penis: function() {},
+
+    generateFDFTemplate: function(sourceFile, callback) {
       this.generateFieldJson(
         sourceFile,
-        nameRegex,
         function(err, _form_fields) {
           if (err) {
             console.log('exec error: ' + err);
             return callback(err, null);
           }
+          jsonData = this.convFieldJson2FDF(_form_fields);
 
-          return callback(null, this.convFieldJson2FDF(_form_fields));
+          return callback(null, jsonData);
         }.bind(this)
       );
     },
@@ -108,16 +108,18 @@
       callback
     ) {
       //Generate the data from the field values.
-      let randomSequence = Math.random()
+      const randomSequence = Math.random()
         .toString(36)
         .substring(7);
-      let currentTime = new Date().getTime();
-      let tempFDFFile = 'temp_data' + currentTime + randomSequence + '.fdf',
-        tempFDF =
-          typeof tempFDFPath !== 'undefined'
-            ? tempFDFPath + '/' + tempFDFFile
-            : tempFDFFile,
-        formData = fdf.generator(fieldValues, tempFDF);
+      const currentTime = new Date().getTime();
+      let tempFDFFile = `temp_data${currentTime}${randomSequence}.fdf`;
+      const tempFDF =
+        typeof tempFDFPath !== 'undefined'
+          ? `${tempFDFPath}/${tempFDFFile}`
+          : tempFDFFile;
+      const formData = fdf.generator(fieldValues, tempFDF);
+
+      console.log('Form Data \n' + tempFDF);
 
       let args = [sourceFile, 'fill_form', tempFDF, 'output', destinationFile];
       if (shouldFlatten) {
