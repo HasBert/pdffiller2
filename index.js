@@ -9,7 +9,7 @@
 (function () {
     const child_process = require('child_process');
     const execFile = require('child_process').execFile;
-    const fdf = require('utf8-fdf-generator');
+    const fdf = require('./utf8-fdf');
     const _ = require('lodash');
     const fs = require('fs');
 
@@ -153,9 +153,13 @@
                 typeof tempFDFPath !== 'undefined'
                     ? `${tempFDFPath}/${tempFDFFile}`
                     : tempFDFFile;
-            const formData = fdf.generator(fieldValues, tempFDF);
-
-            console.log('Form Data \n' + tempFDF);
+            console.log(tempFDF)
+            fdf.generator(fieldValues, tempFDF);
+            fs.readFile(tempFDF, 'utf-8', function (err, data) {
+                //if (err) reject(err);
+                console.log(data);
+            })
+            //console.log('Form Data ' + formData);
 
             let args = [sourceFile, 'fill_form', tempFDF, 'output', destinationFile];
             if (shouldFlatten) {
@@ -207,3 +211,12 @@
 
     module.exports = pdffiller;
 })();
+
+function readFile(source) {
+    return new Promise((resolve, reject) => {
+        fs.readFile(source, 'utf-8', function (err, data) {
+            if (err) reject(err);
+            else resolve(data);
+        });
+    });
+}

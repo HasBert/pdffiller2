@@ -1,0 +1,3 @@
+[submodule "utf8-fdf"]
+	path = utf8-fdf
+	url = git@github.com:HasBert/utf8-fdf-generator.git

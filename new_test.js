@@ -1,7 +1,7 @@
-var pdfFiller = require('./index.js.js.js');
+var pdfFiller = require('./index.js');
 const fs = require('fs');
 
-var sourcePDF = './resources/lbv_538b1.pdf';
+var sourcePDF = './resources/pdf/antrag_auf_einstellung.pdf';
 
 // Override the default field name regex. Default: /FieldName: ([^\n]*)/
 var nameRegex = null;
@@ -11,13 +11,14 @@ var nameRegex = null;
 //console.log(fdfData);
 //});
 
-const testFolder = './resources/';
+const testFolder = './resources/pdf/';
 const destination = './resources/filled/fieldPageMap.json';
 
 const child_process = require('child_process');
 const execFile = require('child_process').execFile;
 //generateKeyMap();
 test();
+filForm();
 
 async function test() {
   try {
@@ -25,7 +26,7 @@ async function test() {
     const result = await pdfFiller.generateFDFTemplate(newSource);
     console.log('penis' + JSON.stringify(result));
   } catch (error) {
-    throw error;
+    console.error(error);
   }
 }
 
@@ -42,6 +43,14 @@ function generateKeyMap() {
       console.log(error);
     }
   });
+}
+
+function filForm() {
+  const cb = function () { console.log("finished") }
+  const fieldValues = {
+    "Wer soll als Hilfskraft beschäftigt werden": "Mutter"
+  }
+  pdfFiller.fillForm('./resources/pdf/antrag_auf_einstellung_new.pdf', './resources/pdf/antrag_auf_einstellung_filled.pdf', fieldValues, cb)
 }
 
 async function appendData(fileName, fileData) {
